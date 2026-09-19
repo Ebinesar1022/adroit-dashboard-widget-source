@@ -3,5 +3,9 @@ import react from "@vitejs/plugin-react";
 export default defineConfig({
   plugins: [react()],
   base: "./",
-  build: { outDir: "dist/app", emptyOutDir: true, chunkSizeWarningLimit: 2000 },
+  build: {
+    outDir: "service_z/app/",
+    emptyOutDir: true,
+    chunkSizeWarningLimit: 2000,
+  },
 });
