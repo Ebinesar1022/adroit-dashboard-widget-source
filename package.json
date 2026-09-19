@@ -1,4 +1,1 @@
-{"name":"adroit-dashboard-widget","private":true,"version":"1.0.0","type":"module",
-"scripts":{"dev":"vite","build":"vite build && cp plugin-manifest.json dist/","pack":"npm run build && cd dist && zip -r ../adroit-dashboard-widget.zip . -x '*.DS_Store'"},
-"dependencies":{"@emotion/react":"^11.11.4","@emotion/styled":"^11.11.5","@mui/material":"^5.15.20","@mui/x-charts":"^7.5.0","react":"^18.3.1","react-dom":"^18.3.1"},
-"devDependencies":{"@vitejs/plugin-react":"^4.3.1","vite":"^5.3.1"}}
+{"name":"adroit-dashboard-widget","private":true,"version":"1.0.0","type":"module","scripts":{"dev":"vite","build":"vite build && cp plugin-manifest.json dist/","pack":"npm run build && cd dist && zip -r ../adroit-dashboard-widget.zip . -x '*.DS_Store'"},"dependencies":{"@emotion/react":"^11.11.4","@emotion/styled":"^11.11.5","@mui/material":"^5.15.20","@mui/x-charts":"^7.5.0","react":"^18.3.1","react-dom":"^18.3.1","portfinder":"^1.0.25"},"devDependencies":{"@vitejs/plugin-react":"^4.3.1","vite":"^5.3.1"}}
