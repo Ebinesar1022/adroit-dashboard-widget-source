@@ -159,23 +159,6 @@ const onOrAfter = (value, day) => {
 const fmtDate = (d) => (d ? `${pad2(d.getDate())}-${pad2(d.getMonth() + 1)}-${d.getFullYear()}` : "");
 const fmtDateMon = (d) => (d ? `${pad2(d.getDate())}-${MONTH_SHORT[d.getMonth()]}-${d.getFullYear()}` : "");
 const fmtDateSpaced = (d) => (d ? `${pad2(d.getDate())} ${MONTH_SHORT[d.getMonth()]} ${d.getFullYear()}` : "");
-const fmtDateInput = (d) => (d ? `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}` : "");
-
-function dateFromInput(value) {
-  if (!value) return null;
-  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (!match) return null;
-  const date = new Date(+match[1], +match[2] - 1, +match[3]);
-  return date.getFullYear() === +match[1] && date.getMonth() === +match[2] - 1 && date.getDate() === +match[3]
-    ? date
-    : null;
-}
-
-function rangeForPreset(preset, today) {
-  if (preset === "last7") return { from: addDays(today, -6), to: today };
-  if (preset === "month") return { from: startOfMonth(today), to: today };
-  return { from: today, to: today };
-}
 
 /* ---- value helpers -------------------------------------------------- */
 
@@ -3206,12 +3189,6 @@ body{
 const EXTRA_STYLES = `
 .widget-status{padding:40px 20px;text-align:center;color:#6b7280;font-size:14px;}
 .widget-error{color:#b91c1c;}
-.date-filter{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 18px;padding:12px 14px;background:#0f766e;border-radius:10px;color:#fff;box-shadow:0 3px 10px rgba(15,118,110,.18);}
-.date-filter label{font-size:13px;font-weight:600;}
-.date-filter select,.date-filter input{min-height:34px;border:1px solid rgba(255,255,255,.55);border-radius:7px;background:#fff;color:#134e4a;padding:0 9px;font:inherit;}
-.date-filter select{font-weight:600;cursor:pointer;}
-.date-filter .date-range-label{font-size:13px;opacity:.92;}
-@media (max-width:640px){.date-filter{align-items:stretch;}.date-filter select,.date-filter input{width:100%;}.date-filter .date-range-label{width:100%;}}
 `;
 
 const starText = (value) => {
@@ -4092,59 +4069,14 @@ function Notice({ children, error }) {
   return <div className={error ? "widget-status widget-error" : "widget-status"}>{children}</div>;
 }
 
-function DateFilter({ preset, onPresetChange, customFrom, customTo, onCustomFromChange, onCustomToChange, range }) {
-  return (
-    <div className="date-filter">
-      <label htmlFor="dashboard-date-filter">Date range</label>
-      <select id="dashboard-date-filter" value={preset} onChange={(event) => onPresetChange(event.target.value)}>
-        <option value="today">Today</option>
-        <option value="last7">Last 7 Days</option>
-        <option value="month">This Month</option>
-        <option value="custom">Custom Date Range</option>
-      </select>
-      {preset === "custom" && (
-        <>
-          <input aria-label="Start date" type="date" value={customFrom} max={customTo} onChange={(event) => onCustomFromChange(event.target.value)} />
-          <span>to</span>
-          <input aria-label="End date" type="date" value={customTo} min={customFrom} onChange={(event) => onCustomToChange(event.target.value)} />
-        </>
-      )}
-      <span className="date-range-label">{fmtDateSpaced(range.from)} – {fmtDateSpaced(range.to)}</span>
-    </div>
-  );
-}
-
 export default function App() {
-  const actualToday = useMemo(() => startOfDay(new Date()), []);
+  const today = useMemo(() => startOfDay(new Date()), []);
   const [tab, setTab] = useState("today");
-  const [datePreset, setDatePreset] = useState("today");
-  const [customFrom, setCustomFrom] = useState(fmtDateInput(actualToday));
-  const [customTo, setCustomTo] = useState(fmtDateInput(actualToday));
   const [datasets, setDatasets] = useState({});
   const [stages, setStages] = useState({ today: "idle", weekly: "idle", monthly: "idle" });
   const [fatal, setFatal] = useState("");
   const started = useRef({});
   const printed = useRef({});
-
-  const selectedRange = useMemo(() => {
-    if (datePreset !== "custom") return rangeForPreset(datePreset, actualToday);
-    const from = dateFromInput(customFrom) || actualToday;
-    const to = dateFromInput(customTo) || actualToday;
-    return from <= to ? { from, to } : { from: to, to: from };
-  }, [actualToday, customFrom, customTo, datePreset]);
-  // The existing Today / Weekly / Monthly calculations are all anchored to one
-  // reporting date. For a range, its end date is that anchor; the selected
-  // range remains visible so users can see the period they chose.
-  const today = selectedRange.to;
-
-  const handlePresetChange = useCallback((preset) => {
-    setDatePreset(preset);
-    if (preset !== "custom") {
-      const range = rangeForPreset(preset, actualToday);
-      setCustomFrom(fmtDateInput(range.from));
-      setCustomTo(fmtDateInput(range.to));
-    }
-  }, [actualToday]);
 
   // Loads the datasets of one tab, one request after another; each result is
   // published as soon as it arrives. Datasets already loaded are not re-fetched.
@@ -4175,15 +4107,6 @@ export default function App() {
     }
     startStage("today");
   }, [startStage]);
-
-  // A different reporting date needs a fresh stage run. Cached datasets whose
-  // server criteria did not change are safely reused.
-  useEffect(() => {
-    started.current = {};
-    printed.current = {};
-    setStages({ today: "idle", weekly: "idle", monthly: "idle" });
-    startStage("today");
-  }, [today, startStage]);
 
   useEffect(() => {
     if (fatal) return;
@@ -4231,16 +4154,6 @@ export default function App() {
 
       <div className="tab-container">
         {fatal && <Notice error>{fatal}</Notice>}
-
-        <DateFilter
-          preset={datePreset}
-          onPresetChange={handlePresetChange}
-          customFrom={customFrom}
-          customTo={customTo}
-          onCustomFromChange={setCustomFrom}
-          onCustomToChange={setCustomTo}
-          range={selectedRange}
-        />
 
         {/* Tabs Inputs */}
         <input
